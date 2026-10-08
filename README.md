@@ -1,6 +1,6 @@
 # 학교 앞 교통
 
-[공개 소스 저장소](https://github.com/greatsong/school-transit)
+[웹앱 열기](https://school-transit.vercel.app) · [학생·교사용 교재](https://school-transit.vercel.app/learn/index.html) · [공개 소스 저장소](https://github.com/greatsong/school-transit)
 
 서울 학생이 학교를 검색하고 주변 버스 정류장·지하철역을 즐겨찾는 웹앱입니다. 로그인, 학생 이름, 집 주소, 기기 위치 조회, 분석 도구를 사용하지 않습니다.
 
@@ -50,7 +50,7 @@ http://127.0.0.1:4318 에서 엽니다. 키 없이 실행하면 **예제 모드*
 4. 네이버 Maps에 배포 URL을 등록합니다. 배포 도메인이 바뀌면 다시 등록합니다.
 5. 새 브라우저와 휴대전화에서 학교 등록, 실제 도착정보, 공유 링크, 네이버 도보 연결을 점검합니다.
 
-**GitHub Pages 단독 배포는 실시간 API 서버를 실행할 수 없습니다.** Pages에는 정적 교재를 배포할 수 있으며, 앱은 Vercel 같은 서버 함수 지원 환경을 사용합니다. 웹앱의 공개 주소는 배포 완료 후 이 문서에 추가합니다.
+**GitHub Pages 단독 배포는 실시간 API 서버를 실행할 수 없습니다.** Pages에는 정적 교재를 배포할 수 있으며, 앱은 Vercel 같은 서버 함수 지원 환경을 사용합니다. 공개 웹앱은 https://school-transit.vercel.app 에서 사용할 수 있습니다. 버스는 실시간으로 연결되어 있으며 지하철·네이버 지도는 별도 키 연결 전까지 예제/대체 지도를 사용합니다.
 
 ## 수업과 수정
 
