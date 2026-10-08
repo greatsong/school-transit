@@ -1,3 +1,5 @@
+import {createJourneyUI} from './journey-ui.js';
+import {JOURNEY_KEY} from './journeys.js';
 import {createMetroUI} from './metro-ui.js';
 import {SITE} from './site.js';
 import {createMapView} from './map-view.js';
@@ -38,6 +40,7 @@ try{
 let school=areas[0],selected=null,map,refreshingFavorites=false;
 let lastRefresh=Date.now(),lastScheduleKey='',searchBusy=false;
 const snapshots=new Map(),pending=new Map(),failures=new Map();
+let journey=null;
 function persist(){
  favorites=restoreFavorites(JSON.stringify(favorites),stopIndex);
  if(sharedMode)return;
@@ -77,7 +80,7 @@ function routeMarkup(r,i,id,scope){
 const metro=createMetroUI({areas,shared:sharedMode,sharedItems:sharedMetro,onChange:()=>{updateMarkers();renderFavorites();},onFocus:point=>map?.focus(point),onSchool:s=>selectSchool(s)});
 $('metroMode').textContent=runtime.subwayMode==='demo'?'지하철은 예제 모드입니다. 실시간 연결에는 별도 서울시 인증키가 필요해요.':'';
 map=await createMapView('map',runtime,id=>{if(id.startsWith('m')){metro.select(id);return;}if(school.stops.some(x=>x.id===id))selectStop(id);else openFavorite(id);});
-$('mapProvider').textContent=map.provider==='naver'?'네이버 지도':map.provider==='osm'?'예제 지도 · 네이버 연결 준비 중':'지도 연결 실패 · 정류장 목록을 이용해주세요';
+$('mapProvider').textContent=map.provider==='google'?'Google 지도':map.provider==='osm'?'OpenStreetMap · Google 지도 키 연결 전':'지도 연결 실패 · 정류장 목록을 이용해주세요';
 function renderSchools(){
  $('schools').innerHTML=areas.map(s=>`<button data-school="${s.id}" class="${s.id===school.id?'active':''}" aria-pressed="${s.id===school.id}">${esc(s.name)}</button>`).join('');
 }
@@ -87,12 +90,12 @@ function timerMarkup(id){
  const routes=snap?favoriteRoutes(favorites.items,id,snap.routes):[];
  return `<div class="map-timer-head">★ ${esc(stop.name)} · ${stop.ars}</div>${failures.has(id)?'<div>연결 실패 · 재조회 대기</div>':!snap?'<div>조회 중…</div>':!routes.length?'<div>도착정보 없음</div>':routes.map(r=>`<div class="map-timer-route"><b>${esc(r.name)}</b><span class="map-time" data-time="${id}:${snap.routes.indexOf(r)}:0"></span><span class="map-timer-direction">${esc(r.direction)} 방면</span></div>`).join('')}<button class="map-timer-link" data-open-stop="${id}">정류장 보기</button>`;
 }
-function popupMarkup(stop){return `<div class="popup-title">${esc(stop.name)}</div><div>${stop.ars} · ${esc(stop.school.name)}</div><div class="popup-actions"><button data-toggle-stop="${stop.id}">${isFavorite(stop.id)?'★ 즐겨찾기 해제':'☆ 즐겨찾기'}</button><button data-schedule-stop="${stop.id}">◷ 시간대 추가</button></div><a class="walk-link" href="${walkingUrl(stop.school,stop)}" target="_blank" rel="noopener">네이버 웹 지도에서 정류장 보기 ↗</a>`;}
+function popupMarkup(stop){return `<div class="popup-title">${esc(stop.name)}</div><div>${stop.ars} · ${esc(stop.school.name)}</div><div class="popup-actions"><button data-toggle-stop="${stop.id}">${isFavorite(stop.id)?'★ 즐겨찾기 해제':'☆ 즐겨찾기'}</button><button data-schedule-stop="${stop.id}">◷ 시간대 추가</button></div><a class="walk-link" href="${walkingUrl(stop.school,stop)}" target="_blank" rel="noopener">Google 지도에서 정류장 보기 ↗</a>`;}
 function updateMarkers(){
  if(!map)return;
- const ids=new Set([...school.stops.map(s=>s.id),...favoriteStopIds(favorites.items)]);
+ const ids=new Set([...school.stops.map(s=>s.id),...favoriteStopIds(favorites.items),...(journey?.points||[]).filter(p=>p.kind==='bus').map(p=>p.id)]);
  const stops=[...ids].map(id=>{const current=school.stops.find(s=>s.id===id);return current?{...current,school}:stopIndex.get(id);}).filter(Boolean);
- map.render([...stops,...metro.markers()],{selectedId:metro.selected||selected?.id,favoriteIds:[...favoriteStopIds(favorites.items),...metro.favoriteIds],timer:id=>id.startsWith('m')?metro.timer(id):timerMarkup(id),popup:s=>s.id.startsWith('m')?metro.popup(s):popupMarkup(s)});tickTimes();
+ map.render([...stops,...metro.markers()],{selectedId:metro.selected||selected?.id,favoriteIds:[...favoriteStopIds(favorites.items),...metro.favoriteIds,...(journey?.boardIds||[])],timer:id=>journey?.boardIds.includes(id)?journey.timer(id):id.startsWith('m')?metro.timer(id):timerMarkup(id),popup:s=>s.id.startsWith('m')?metro.popup(s):popupMarkup(s)});tickTimes();journey?.render();
 }
 function selectSchool(s,startId){
  school=s;metro.setSchool(s);renderSchools();
@@ -109,7 +112,7 @@ function selectStop(id){
  metro.hide();
  const changed=selected?.id!==id;selected=school.stops.find(s=>s.id===id);if(!selected)return;if(changed)map.focus([selected.lat,selected.lng]);
  $('stopSelect').value=id;$('stopName').textContent=selected.name;$('stopMeta').textContent=`정류소 ${selected.ars} · 학교에서 직선 약 ${Math.round(selected.distance)}m`;
- $('walkInfo').innerHTML=`<a class="walk-link" href="${esc(walkingAppUrl(school,selected,location.origin))}">학교에서 걸어가기 · 네이버 앱 ↗</a><br><small>학교 중심에서 출발합니다. 네이버 지도 앱 설치가 필요해요.</small><br><a class="walk-link" href="${walkingUrl(school,selected)}" target="_blank" rel="noopener">네이버 웹 지도에서 정류장 보기 ↗</a>`;
+ $('walkInfo').innerHTML=`<a class="walk-link" href="${esc(walkingAppUrl(school,selected,location.origin))}">학교에서 걸어가기 · Google 지도 ↗</a><br><small>학교 중심에서 출발합니다. 한국 도보 경로는 제공되지 않을 수 있어요.</small><br><a class="walk-link" href="${walkingUrl(school,selected)}" target="_blank" rel="noopener">Google 지도에서 정류장 보기 ↗</a>`;
  document.querySelectorAll('[data-stop]').forEach(b=>{b.classList.toggle('active',b.dataset.stop===id);b.setAttribute('aria-pressed',String(b.dataset.stop===id));});
  updateMarkers();
  if(!snapshots.has(id)&&!failures.has(id))load(id);else render();
@@ -146,6 +149,7 @@ function tickTimes(){document.querySelectorAll('[data-time]').forEach(el=>{
  const details=el.parentElement.querySelector('.details');if(details)details.style.visibility=v.kind==='running'?'visible':'hidden';
 });}
 function applySchedule(force=false){
+ if(journey?.active)return;
  const active=activeDefault(schedule,favorites.defaultStop),entry=stopIndex.get(active.stopId);
  $('scheduleStatus').textContent=entry?`${active.rule?active.rule.start+'–'+active.rule.end:'기본 정류장'} · ${entry.school.name} / ${entry.name} (${entry.ars})`:'기본으로 열 정류장을 즐겨찾기하거나 시간대를 설정해주세요.';
  $('showScheduled').disabled=!entry;
@@ -153,10 +157,10 @@ function applySchedule(force=false){
  lastScheduleKey=active.key;
 }
 function tick(){
- tickTimes();applySchedule();
+ tickTimes();journey?.apply();journey?.render();applySchedule();
  const busy=refreshingFavorites||pending.size>0;
  $('autoStatus').textContent=document.hidden?'자동 갱신 일시정지 · 화면으로 돌아오면 재개':refreshingFavorites?'새 도착정보를 갱신하고 있어요…':`자동 갱신까지 ${Math.max(0,60-Math.floor((Date.now()-lastRefresh)/1000))}초 · 1분마다 조회`;
- if(shouldRefresh({visible:!document.hidden,busy,now:Date.now(),lastRefresh}))refreshBatch([selected?.id,...favoriteStopIds(favorites.items)].filter(Boolean));
+ if(shouldRefresh({visible:!document.hidden,busy,now:Date.now(),lastRefresh}))refreshBatch([selected?.id,...favoriteStopIds(favorites.items),...(journey?.boardIds||[]).filter(id=>!id.startsWith('m'))].filter(Boolean));
 }
 function draftSchedule(){return {enabled:$('scheduleEnabled').checked,rules:[...$('scheduleRows').children].map(row=>({start:row.querySelector('[data-start]').value,end:row.querySelector('[data-end]').value,stopId:row.querySelector('select').value}))};}
 function editSchedule(config=schedule){
@@ -196,12 +200,13 @@ $('shareButton').addEventListener('click',()=>{
  catch(e){$('shareUrl').value='';$('shareNote').textContent=e.message;}
 });
 $('copyShare').addEventListener('click',async()=>{if(!$('shareUrl').value)return;try{await navigator.clipboard.writeText($('shareUrl').value);$('copyShare').textContent='복사 완료';}catch{$('shareUrl').select();$('shareNote').textContent='주소를 선택했습니다. 복사해서 공유해주세요.';}});
-window.addEventListener('storage',e=>{if(!sharedMode&&[STORAGE_KEY,SCHEDULE_KEY,WORKSPACE_KEY,'school-transit-metro-v1'].includes(e.key))location.reload();});
+window.addEventListener('storage',e=>{if(!sharedMode&&[STORAGE_KEY,SCHEDULE_KEY,WORKSPACE_KEY,JOURNEY_KEY,'school-transit-metro-v1'].includes(e.key))location.reload();});
+journey=createJourneyUI({areas,shared:sharedMode,snapshot:id=>id.startsWith('m')?metro.snapshot(id):failures.has(id)?null:snapshots.get(id),nowFor,load:id=>id.startsWith('m')?metro.load(id):load(id),onChange:()=>{metro.setJourneyPoints(journey?.points||[],journey?.boardIds||[]);updateMarkers();},onFocus:point=>{if(!point)return;if(point.kind==='metro')metro.select(point.id);else openFavorite(point.id);}});
 const initial=stopIndex.get(shareStart)||stopIndex.get(activeDefault(schedule,favorites.defaultStop).stopId);
 lastScheduleKey=activeDefault(schedule,favorites.defaultStop).key;
 const fromSetup=new URLSearchParams(location.hash.slice(1)).get('school');
-selectSchool(areas.find(s=>s.id===(shareSchool||fromSetup))||initial?.school||school,fromSetup?null:initial?.id);editSchedule();applySchedule();loadFavoritesOnce();setInterval(tick,1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)applySchedule(true);tick();});
+selectSchool(areas.find(s=>s.id===(shareSchool||fromSetup))||initial?.school||school,fromSetup?null:initial?.id);editSchedule();journey.apply(true,!fromSetup&&!sharedMode);applySchedule();loadFavoritesOnce();setInterval(tick,1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){journey?.apply(true);applySchedule(true);}tick();});
 window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#share=')||location.hash.startsWith('#school='))location.reload();});
 
 }

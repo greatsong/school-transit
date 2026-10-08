@@ -30,7 +30,7 @@ export function decodeShare(hash){
   return obj;
  }catch{throw Error('올바르지 않은 공유 링크입니다.');}
 }
-export function walkingUrl(area,stop){return `https://map.naver.com/p/search/${encodeURIComponent(stop.name+' 버스정류장 '+stop.ars)}`;}
+export function walkingUrl(area,stop){return 'https://www.google.com/maps/search/?'+new URLSearchParams({api:'1',query:`${stop.lat},${stop.lng}`});}
 export function shouldRefresh({visible,busy,now,lastRefresh}){return visible&&!busy&&now-lastRefresh>=60000;}
 
 // Share only this school's public choices. Never export the user's daily schedule.
@@ -44,7 +44,6 @@ export function removeArea(areas,favorites,schedule,id){
  const next=areas.filter(s=>s.id!==id),valid=new Set(next.flatMap(s=>s.stops.map(x=>x.id)));
  return {areas:next,favorites:{items:favorites.items.filter(f=>valid.has(f.stopId)),defaultStop:valid.has(favorites.defaultStop)?favorites.defaultStop:null},schedule:{enabled:schedule.enabled&&schedule.rules.some(r=>valid.has(r.stopId)),rules:schedule.rules.filter(r=>valid.has(r.stopId))}};
 }
-export function walkingAppUrl(area,stop,origin){
- const query=new URLSearchParams({slat:area.lat,slng:area.lng,sname:area.name,dlat:stop.lat,dlng:stop.lng,dname:stop.name,appname:origin});
- return 'nmap://route/walk?'+query;
+export function walkingAppUrl(area,stop){
+ return 'https://www.google.com/maps/dir/?'+new URLSearchParams({api:'1',origin:`${area.lat},${area.lng}`,destination:`${stop.lat},${stop.lng}`,travelmode:'walking'});
 }

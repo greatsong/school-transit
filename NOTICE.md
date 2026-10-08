@@ -6,7 +6,7 @@
 - 지하철 좌표: [서울시 역사 마스터 OA-21232](https://data.seoul.go.kr/dataList/OA-21232/S/1/datasetView.do), 취득 2026-10-08. 괄호 속 부역명을 제외한 이름으로 연결한 뒤 서울·인접 범위의 372개 역으로 묶었습니다. 각 출입구 좌표가 아닙니다. 서울시 출처 표시 조건을 유지합니다.
 - Leaflet 1.9.4: BSD-2-Clause. `node_modules/leaflet/LICENSE`의 고지를 배포본 `vendor/leaflet/LICENSE`에 포함합니다.
 - OpenStreetMap: © OpenStreetMap contributors, [저작권과 ODbL](https://www.openstreetmap.org/copyright), [타일 이용 정책](https://operations.osmfoundation.org/policies/tiles/). 지도 출처 표시를 제거하지 않습니다.
-- 네이버 지도: SDK와 길찾기는 네이버의 별도 이용약관·요금·도메인 제한을 따릅니다. 프로젝트의 MIT 라이선스는 네이버 SDK에 적용되지 않습니다.
+- Google Maps: SDK와 길찾기는 Google Maps Platform의 별도 이용약관·요금·키 제한을 따릅니다. 프로젝트의 MIT 라이선스는 Google SDK에 적용되지 않습니다. https://developers.google.com/maps/terms
 - DS Danggok 교재: 이 프로젝트의 학생용·교사용 페이지는 기존 교재의 공용 스타일과 복사 버튼을 사용합니다. 공개 교재만 포함하며 학생 자료·문항은행은 포함하지 않습니다.
 
 원자료와 외부 서비스의 이용 조건은 프로젝트의 MIT 라이선스로 변경되지 않습니다.

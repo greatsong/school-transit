@@ -36,7 +36,7 @@ test('searched stops can be favorites and walking links explicitly request walk 
  const raw=JSON.stringify({items:[{stopId:'123456789',routeId:null}],defaultStop:'123456789'});
  assert.equal(restoreFavorites(raw,new Set(['123456789'])).items.length,1);
  assert.equal(restoreFavorites(raw).items.length,0);
- const url=new URL(walkingAppUrl(areas[0],areas[0].stops[0],'https://school.example'));assert.equal(url.protocol,'nmap:');assert.equal(url.pathname,'/walk');assert.equal(Number(url.searchParams.get('slat')),areas[0].lat);assert.equal(Number(url.searchParams.get('dlat')),areas[0].stops[0].lat);
+ const url=new URL(walkingAppUrl(areas[0],areas[0].stops[0],'https://school.example'));assert.equal(url.origin,'https://www.google.com');assert.equal(url.searchParams.get('travelmode'),'walking');assert.equal(url.searchParams.get('origin'),`${areas[0].lat},${areas[0].lng}`);assert.equal(url.searchParams.get('destination'),`${areas[0].stops[0].lat},${areas[0].stops[0].lng}`);
 });
 test('auto refresh runs after sixty seconds only when visible and idle',()=>{
  const c={visible:true,busy:false,now:60000,lastRefresh:0};assert.equal(shouldRefresh(c),true);

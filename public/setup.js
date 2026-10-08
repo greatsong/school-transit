@@ -1,3 +1,4 @@
+import {JOURNEY_KEY} from './journeys.js';
 import {METRO_KEY,cleanMetro} from './metro.js';
 import {SCHOOL_CATALOG} from './school-catalog.js';
 import {SITE} from './site.js';
@@ -23,8 +24,8 @@ async function add(id){
  finally{busy=false;}
 }
 $('schoolSearch').addEventListener('submit',e=>{e.preventDefault();const q=$('schoolQuery').value.trim().replace(/\s/g,'').toLowerCase();
- const rows=q.length>=2?SCHOOL_CATALOG.filter(s=>(s.name+s.address).replace(/\s/g,'').toLowerCase().includes(q)).slice(0,20):[];
- $('searchResults').innerHTML=rows.length?rows.map(s=>`<button class="search-result" data-add="${s.id}"><b>${esc(s.name)}</b><small>${esc(s.address)}</small><span>이 학교 등록</span></button>`).join(''):'<p>검색 결과가 없습니다. 두 글자 이상 입력해주세요.</p>';
+ const rows=q.length>=2?SCHOOL_CATALOG.filter(s=>[s.name,s.address].some(v=>v.replace(/\s/g,'').toLowerCase().includes(q))).slice(0,20):[];
+ $('searchResults').innerHTML=rows.length?rows.map(s=>`<button class="search-result" data-add="${s.id}"><b>${esc(s.name)}</b><small>${esc(s.address)}</small><span>이 학교 등록</span></button>`).join(''):'<p>검색 결과가 없습니다. 학교 이름 또는 학교의 도로명·건물번호를 두 글자 이상 입력해주세요.</p>';
 });
 document.addEventListener('click',e=>{
  const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
@@ -35,7 +36,7 @@ document.addEventListener('click',e=>{
   catch{$('setupStatus').textContent='저장 공간에 접근하지 못했습니다.';}
  }
 });
-$('resetSettings').addEventListener('click',()=>{try{[WORKSPACE_KEY,STORAGE_KEY,SCHEDULE_KEY,METRO_KEY].forEach(k=>localStorage.removeItem(k));areas=[];render();$('resetStatus').textContent='이 앱의 학교·즐겨찾기·시간대 설정을 지웠습니다.';$('setupStatus').textContent='';}catch{$('resetStatus').textContent='설정을 지우지 못했습니다. 브라우저의 사이트 데이터 메뉴를 이용해주세요.';}});
+$('resetSettings').addEventListener('click',()=>{try{[WORKSPACE_KEY,STORAGE_KEY,SCHEDULE_KEY,METRO_KEY,JOURNEY_KEY].forEach(k=>localStorage.removeItem(k));areas=[];render();$('resetStatus').textContent='이 앱의 학교·즐겨찾기·시간대·이동 경로 설정을 지웠습니다.';$('setupStatus').textContent='';}catch{$('resetStatus').textContent='설정을 지우지 못했습니다. 브라우저의 사이트 데이터 메뉴를 이용해주세요.';}});
 render();
 const defaultSchool=SCHOOL_CATALOG.find(s=>s.id===SITE.defaultSchoolId);
 if(defaultSchool){$('schoolQuery').value=defaultSchool.name;$('searchResults').innerHTML=`<button class="search-result" data-add="${defaultSchool.id}">${esc(defaultSchool.name)} 등록</button>`;}
