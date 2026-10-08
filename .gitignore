@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.vercel/
+.env*
+qa/
+!.env.example

@@ -1,0 +1,19 @@
+{
+  "name": "school-bus-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/*.test.js",
+    "dev:secure": "python3 scripts/dev-secure.py",
+    "check:public": "node scripts/check-public.mjs"
+  },
+  "dependencies": {
+    "leaflet": "1.9.4"
+  }
+}
